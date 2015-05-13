@@ -1,7 +1,6 @@
 # Jayson's Python Tools
 
-## Jayson Stemmler
-## jstemm@uw.edu
+## Jayson Stemmler (<jstemm@uw.edu>)
 
 This is a readme file.
 

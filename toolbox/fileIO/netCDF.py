@@ -1,16 +1,15 @@
-__author__ = 'jstemm'
+__author__ = "Jayson Stemmler"
 
 from netCDF4 import Dataset
 
 
 class netCDF(object):
 
-    def __init__(self, ncfile, **kwargs):
+    def __init__(self, ncfile):
 
         import os
-        import pandas as pd
-        import numpy as np
 
+        assert isinstance(ncfile, str)
         self.abspath = os.path.abspath(ncfile)
 
     def get_keys(self):
@@ -29,27 +28,26 @@ class netCDF(object):
 
         # open the file for reading
         with Dataset(self.abspath, 'r') as D:
+
             variables = dict()
 
             # iterate through the keys
             for k in self.get_keys():
 
-                long_name, units, dimensions = None, None, None
+                long_name, units, dimensions = "None", "None", "None"
 
-                if hasattr(D.variables[k], 'long_name'):
-                    long_name = getattr(D.variables[k], 'long_name')
+                if hasattr(D.variables[k], "long_name"):
+                    long_name = getattr(D.variables[k], "long_name")
 
-                if hasattr(D.variables[k], 'units'):
-                    units = getattr(D.variables[k], 'units')
+                if hasattr(D.variables[k], "units"):
+                    units = getattr(D.variables[k], "units")
 
-                if hasattr(D.variables[k], 'dimensions'):
-                    dimensions = getattr(D.variables[k], 'dimensions')
+                if hasattr(D.variables[k], "dimensions"):
+                    dimensions = getattr(D.variables[k], "dimensions")
 
-                variables[k] = {'long_name': long_name,
-                                'dimensions': dimensions,
-                                'units': units}
+                variables[k] = dict(long_name=long_name, dimensions=dimensions, units=units)
 
-                print('{}\n\tlong name: {}\n\tdimensions: {}\n\tunits: {}'.
+                print("{}\n\tlong name: {}\n\tdimensions: {}\n\tunits: {}".
                       format(k, long_name, dimensions, units))
 
         if return_dict:
