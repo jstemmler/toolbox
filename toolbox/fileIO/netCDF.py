@@ -11,7 +11,77 @@ class VariableWarning(Warning):
     pass
 
 
-class netCDF(object):
+class NetCDFFolder(object):
+
+    def __init__(self, folder, pat=None, ext=('nc', 'cdf')):
+
+        import os
+        import glob
+        import numpy as np
+
+        assert isinstance(folder, str)
+        assert os.path.isdir(folder)
+
+        self.abspath = os.path.abspath(folder)
+
+        if pat is None:
+            filelist = glob.glob(os.path.join(self.abspath, '*'))
+            to_remove = [i for i in filelist if os.path.basename(i).split('.')[-1] not in ext]
+            for r in to_remove:
+                filelist.remove(r)
+        else:
+            filelist = glob.glob(os.path.join(self.abspath, pat))
+
+        self.filelist = np.array(filelist, dtype=str)
+
+    def summary(self, detailed=True, **kwargs):
+
+        import os
+
+        print(self.abspath)
+        print("Found {} files total\n".format(len(self.filelist)))
+
+        if detailed:
+            streams = dict()
+            sep = kwargs.pop('sep', '.')
+
+            for f in self.filelist:
+                bn = os.path.basename(f).split(sep)[0]
+                if bn in streams.keys():
+                    streams[bn] += 1
+                else:
+                    streams[bn] = 1
+
+            for k, v in streams.iteritems():
+                print("Found {} items for datastream {}".format(v, k))
+
+    def process(self, varlist=None, **kwargs):
+
+        import pandas as pd
+        import numpy as np
+
+        include = kwargs.pop('include', None)
+
+        if include:
+            frames = [NetCDFFile(f).get_vars(varlist=varlist, **kwargs)
+                      for f in self.filelist
+                      if include in f]
+        else:
+            frames = [NetCDFFile(f).get_vars(varlist=varlist, **kwargs)
+                      for f in self.filelist]
+
+        is_frame = np.array(['pandas' in str(type(i)) or i is None
+                             for i in frames])
+
+        self.frames = frames
+
+        if is_frame.all():
+            return pd.concat(frames)
+        else:
+            return "not all frames are True"
+
+
+class NetCDFFile(object):
 
     def __init__(self, ncfile):
 
@@ -66,7 +136,7 @@ class netCDF(object):
         else:
             return
 
-    def _parse_variable_list(self, varlist):
+    def _parse_variable_list(self, varlist, **kwargs):
         """
         Internal parsing function used to determine the netCDF variables to import.
         :param varlist:
@@ -77,7 +147,7 @@ class netCDF(object):
         import warnings
 
         # make sure that varlist is of type list, tuple, or string
-        assert isinstance(varlist, list) or isinstance(varlist, tuple) or isinstance(varlist, str)
+        assert isinstance(varlist, (list, tuple, str))
 
         __keys = self.get_keys()
         _master_list = []
@@ -96,14 +166,19 @@ class netCDF(object):
         if isinstance(varlist, str):
             _parse_string(__keys, varlist)
 
-        elif isinstance(varlist, list) or isinstance(varlist, tuple):
+        elif isinstance(varlist, (list, tuple)):
             for l in varlist:
                 _parse_string(__keys, l)
         else:
             print('UP UP DOWN DOWN LEFT RIGHT LEFT RIGHT B A START')
 
+        ignore_empty = kwargs.pop('ignore_empty', False)
+
         if len(_master_list) == 0:
-            raise VariableError('Error: No matching variables found')
+            if ignore_empty:
+                return None
+            else:
+                raise VariableError('Error: No matching variables found')
         else:
             return tuple(_master_list)
 
@@ -114,14 +189,21 @@ class netCDF(object):
         else:
             return False
 
-    def get_vars(self, varlist=None):
+    def get_vars(self, varlist=None, **kwargs):
+
         if varlist is None:
             raise VariableError('Error: varlist not supplied')
 
         import pandas as pd
         import numpy as np
 
-        vl = self._parse_variable_list(varlist)
+        resample = kwargs.pop('resample', None)
+        assert isinstance(resample, str)
+
+        vl = self._parse_variable_list(varlist, **kwargs)
+
+        if vl is None:
+            return None
 
         with Dataset(self.abspath, 'r') as D:
             time_dim = np.array([self._check_time_dimension(D.variables[v]) for v in vl])
@@ -133,7 +215,10 @@ class netCDF(object):
                 for v in vl:
                     data[v] = D.variables[v][:]
 
-                df = pd.DataFrame(data, index=dt)
+                if resample is None:
+                    df = pd.DataFrame(data, index=dt)
+                else:
+                    df = pd.DataFrame(data, index=dt).resample(resample)
 
                 return df
             else:

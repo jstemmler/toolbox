@@ -1,3 +1,4 @@
-__author__ = 'jstemm'
+__author__ = 'Jayson Stemmler'
 
-from netCDF import netCDF
+from netCDF import NetCDFFile
+from netCDF import NetCDFFolder
