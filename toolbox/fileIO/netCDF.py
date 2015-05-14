@@ -76,7 +76,7 @@ class NetCDFFolder(object):
         if is_frame.all():
             return pd.concat(frames)
         else:
-            return "not all frames are True"
+            return None
 
 
 class NetCDFFile(object):
