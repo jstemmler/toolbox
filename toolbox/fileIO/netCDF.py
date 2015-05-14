@@ -73,8 +73,6 @@ class NetCDFFolder(object):
         is_frame = np.array(['pandas' in str(type(i)) or i is None
                              for i in frames])
 
-        self.frames = frames
-
         if is_frame.all():
             return pd.concat(frames)
         else:
