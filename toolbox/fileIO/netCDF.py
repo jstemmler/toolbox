@@ -20,7 +20,6 @@ class VariableWarning(Warning):
 
 
 class NetCDFFolder(object):
-
     def __init__(self, folder, pat=None, ext=('nc', 'cdf')):
 
         assert isinstance(folder, str)
@@ -88,7 +87,6 @@ class NetCDFFolder(object):
 
 
 class NetCDFFile(object):
-
     def __init__(self, ncfile):
 
         assert isinstance(ncfile, str)
@@ -119,10 +117,10 @@ class NetCDFFile(object):
 
                 long_name, units, dimensions = "None", "None", "None"
 
-                if hasattr(D.variables[k], "long_name"):   # check if it has the 'long_name' attribute
+                if hasattr(D.variables[k], "long_name"):  # check if it has the 'long_name' attribute
                     long_name = getattr(D.variables[k], "long_name")
 
-                if hasattr(D.variables[k], "units"):       # check if it has the 'units' attribute
+                if hasattr(D.variables[k], "units"):  # check if it has the 'units' attribute
                     units = getattr(D.variables[k], "units")
 
                 if hasattr(D.variables[k], "dimensions"):  # check if it has the 'dimensions' attribute
@@ -199,7 +197,6 @@ class NetCDFFile(object):
         if resample is not None:
             if not isinstance(resample, str):
                 raise TypeError("resample must be of type string")
-
 
         vl = self._parse_variable_list(varlist, **kwargs)
 
