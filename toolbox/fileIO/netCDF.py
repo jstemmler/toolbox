@@ -12,32 +12,83 @@ from ..tools import ProgressBar
 
 
 class VariableError(Exception):
+    """Generic Variable Error exception class"""
     pass
 
 
 class VariableWarning(Warning):
+    """Generic Variable Warning warning class"""
     pass
 
 
 class NetCDFFolder(object):
+    """Sets up the NetCDFFolder class object
+
+    The NetCDFFolder object is a way to manage a folder of netCDF files
+    that you may want to ingest into a single analysis. This object allows
+    you to define file extensions and patterns in the netCDF filename when
+    searching the directory. Additionally, there are several different output
+    options for saving your output as a single file.
+
+    Arguments
+    -------------------------
+        Required:
+
+        -  folder (str)
+                the location of the folder on disk. This can be
+                relative to the working folder, but absolute paths
+                are always better than relative paths.
+
+        Optional:
+
+        -   pat (str)
+                a string pattern that you'd like to match for files
+                in the directory. Default is None, so that all files that
+                match the file extensions will be found.
+
+        -   ext (list, tup)
+                valid netCDF file extensions. This defaults
+                to 'nc' and 'cdf' which are common netCDF file
+                extensions. If you would like to define your own
+                list, or have a narrower list, you may modify to
+                your liking. This argument can also be a string.
+
+    Raises
+    --------------------------
+
+        TypeError: If any of the inputs are not of the correct type.
+
+        IOError: If the folder cannot be found on disk.
+    """
     def __init__(self, folder, pat=None, ext=('nc', 'cdf')):
 
-        assert isinstance(folder, str)
-        assert os.path.isdir(folder)
+        if not isinstance(folder, str):
+            raise TypeError('Folder is not a string')
+
+        if not os.path.isdir(folder):
+            raise IOError('Folder {} does not exist on disk'.format(folder))
 
         self.abspath = os.path.abspath(folder)
 
         if pat is None:
             filelist = glob.glob(os.path.join(self.abspath, '*'))
-            to_remove = [i for i in filelist if os.path.basename(i).split('.')[-1] not in ext]
+            if isinstance(ext, tuple) or isinstance(ext, list):
+                to_remove = [i for i in filelist if os.path.basename(i).split('.')[-1] not in ext]
+            elif isinstance(ext, str):
+                to_remove = [i for i in filelist if os.path.basename(i).split('.')[-1] == ext]
+            else:
+                raise TypeError('ext is type {}, must be list, tuple, or string'
+                                .format(type(ext)))
+
             for r in to_remove:
                 filelist.remove(r)
         else:
-            filelist = glob.glob(os.path.join(self.abspath, pat))
+            filelist = glob.glob(os.path.join(self.abspath, '*{}*'.format(pat)))
 
         self.filelist = np.array(filelist, dtype=str)
 
     def summary(self, detailed=True, **kwargs):
+        """Print a summary of the folder contents"""
 
         print(self.abspath)
         print("Found {} files total\n".format(len(self.filelist)))
@@ -57,29 +108,30 @@ class NetCDFFolder(object):
                 print("Found {} items for datastream {}".format(v, k))
 
     def process(self, varlist=None, **kwargs):
-        _filelist = self.filelist
+        """Process each netCDF file using the NetCDFFile class"""
 
+        # allows setting an optional string here for which files to include in analysis.
+        # the routine will check to see if 'include' is in the filename.
         include = kwargs.pop('include', None)
 
         frames = []
 
-        pb = ProgressBar()
+        for f in self.filelist:
+            if (include is not None) and (not isinstance(include, str)):
+                raise TypeError('include is not proper type')
 
-        pb.start(_filelist)
-
-        for f in _filelist:
             if (include is None) or (include in f):
                 frames.append(NetCDFFile(f).get_vars(varlist=varlist, **kwargs))
             else:
                 continue
 
-            pb.update()
-
-        pb.finish()
-
+        # rudimentary way to check if the content of the frames is a pandas object
+        # TODO: figure out a better way to check and evaluate this
         is_frame = np.array(['pandas' in str(type(i)) or i is None
                              for i in frames])
 
+        # currently only returns values if everything plays nice with Pandas
+        # TODO: make NetCDFFolder.process output more generic
         if is_frame.all():
             return pd.concat(frames)
         else:
@@ -87,9 +139,33 @@ class NetCDFFolder(object):
 
 
 class NetCDFFile(object):
+    """Sets up the NetCDFFile object class
+
+    Take the netCDF file and add some useful methods to it for easier
+    processing and analysis.
+
+    ** NOTE: The scope of this class is still not clearly defined.
+             For example, should this include some plotting routines, or
+             should it simply be a wrapper for getting variables and information
+             out of the netCDF files? I don't know quite yet, so expect this to
+             change. Currently it is only a wrapper for the netCDF file
+             operations and listing out some variables.
+
+    Arguments
+    ---------------------
+
+        Required:
+
+        -   ncfile (str): the full filepath of the netCDF file.
+    """
     def __init__(self, ncfile):
 
-        assert isinstance(ncfile, str)
+        if not isinstance(ncfile, str):
+            raise TypeError('ncfile MUST be a string')
+
+        if not os.path.isfile(ncfile):
+            raise IOError('ncfile does not exist on disk')
+
         self.abspath = os.path.abspath(ncfile)
 
     def get_keys(self):
@@ -102,9 +178,9 @@ class NetCDFFile(object):
 
     def print_vars(self, return_dict=False):
         """Nicely formatted printout of netCDF variables and descriptions
+
            It will even return the dictionary if you want to reference later,
            just set return_dict to True
-        :rtype : dict
         """
 
         # open the file for reading
@@ -139,20 +215,18 @@ class NetCDFFile(object):
             return
 
     def _parse_variable_list(self, varlist, **kwargs):
-        """
-        Internal parsing function used to determine the netCDF variables to import.
-        :param varlist:
-        :return:
-        """
+        """Parse the netCDF variable list"""
 
         # make sure that varlist is of type list, tuple, or string
-        assert isinstance(varlist, (list, tuple, str))
+        if not isinstance(varlist, (list, tuple, str)):
+            raise TypeError("What did you just try and pass? It's not okay.")
 
-        __keys = self.get_keys()
+        _keys = self.get_keys()
         _master_list = []
 
         def _parse_string(ky, s):
-            assert isinstance(s, str)
+            if not isinstance(s, str):
+                raise TypeError("Hey, {} is not a string".format(s))
 
             if s in ky:
                 if s not in _master_list:
@@ -163,11 +237,11 @@ class NetCDFFile(object):
                 warnings.warn('Warning: {} not found in varlist'.format(s), VariableWarning)
 
         if isinstance(varlist, str):
-            _parse_string(__keys, varlist)
+            _parse_string(_keys, varlist)
 
         elif isinstance(varlist, (list, tuple)):
             for l in varlist:
-                _parse_string(__keys, l)
+                _parse_string(_keys, l)
         else:
             print('UP UP DOWN DOWN LEFT RIGHT LEFT RIGHT B A START')
 
@@ -189,6 +263,33 @@ class NetCDFFile(object):
             return False
 
     def get_vars(self, varlist=None, **kwargs):
+        """Return data from the netCDF file as a Pandas object if possible
+
+        This is the main heavy-lifter of the NetCDFFile class.
+        The method parses the variable list passed into it and does
+        just about all it can to get you any variables inside the file it
+        thinks are matches.
+
+        Requires:
+         -  varlist (str, list, tuple)
+                can be a single string that you want
+                matched to keys in the netCDF variable list.
+                If it's not an exact match, it will look for
+                partial matches. If list or tuple, they must
+                contain all strings. Same rules apply to strings
+                inside of lists and tuples.
+
+        Returns:
+
+         -  Pandas DataFrame or dict()
+                The output type depends purely on the following conditions:
+                  1. 'time' is a netCDF variable
+                  2. 'time' exists in the dimensions for each variable
+                If both of these conditions are met, it should be able to output
+                a pandas DataFrame indexed on a datetime object with the variables
+                as the column names. If not, the output is a keyed dictionary with
+                the variables as the dictionary keys and the data as a numpy array.
+        """
 
         if varlist is None:
             raise VariableError('Error: varlist not supplied')
