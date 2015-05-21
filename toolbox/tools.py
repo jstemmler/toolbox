@@ -6,6 +6,11 @@ import sys
 
 
 class ProgressBar(object):
+    """Prints a status bar for longer loop operations
+
+    Currently does not work. I will update
+    when it actually works properly.
+    """
 
     def __init__(self, **kwargs):
 
