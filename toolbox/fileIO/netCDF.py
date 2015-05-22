@@ -5,10 +5,11 @@ import glob
 import warnings
 import numpy as np
 import pandas as pd
+import tables
 
 from netCDF4 import Dataset, num2date
 
-from ..tools import ProgressBar
+# from ..tools import ProgressBar
 
 
 class VariableError(Exception):
@@ -107,12 +108,22 @@ class NetCDFFolder(object):
             for k, v in streams.iteritems():
                 print("Found {} items for datastream {}".format(v, k))
 
-    def process(self, varlist=None, **kwargs):
+    def process(self, varlist=None, savefile=None, **kwargs):
         """Process each netCDF file using the NetCDFFile class"""
 
         # allows setting an optional string here for which files to include in analysis.
         # the routine will check to see if 'include' is in the filename.
         include = kwargs.pop('include', None)
+
+        # if you would like to save the output as an hdf5 file, use the
+        # keyword "savefile"
+
+        if savefile is not None:
+            savefile = os.path.abspath(savefile)
+            # check that the save directory exists
+            if not os.path.isdir(os.path.split(savefile)[0]):
+                raise IOError('Save path "{}" does not exist'.
+                              format(os.path.split(savefile)[0]))
 
         frames = []
 
@@ -131,12 +142,19 @@ class NetCDFFolder(object):
                              for i in frames])
 
         # currently only returns values if everything plays nice with Pandas
-        # TODO: make NetCDFFolder.process output more generic
+        # TODO: make NetCDFFolder.process output allow more output types
         if is_frame.all():
-            return pd.concat(frames)
+            data = pd.concat(frames)
         else:
-            return None
+            data = None
 
+        if data is not None and savefile is not None:
+            try:
+                data.to_hdf(savefile, 'data')
+            except AttributeError:
+                raise Warning("Could not save file")
+
+        return data
 
 class NetCDFFile(object):
     """Sets up the NetCDFFile object class
@@ -158,6 +176,7 @@ class NetCDFFile(object):
 
         -   ncfile (str): the full filepath of the netCDF file.
     """
+
     def __init__(self, ncfile):
 
         if not isinstance(ncfile, str):
@@ -214,7 +233,7 @@ class NetCDFFile(object):
         else:
             return
 
-    def _parse_variable_list(self, varlist, **kwargs):
+    def _parse_variable_list(self, varlist, exclude, **kwargs):
         """Parse the netCDF variable list"""
 
         # make sure that varlist is of type list, tuple, or string
@@ -224,7 +243,7 @@ class NetCDFFile(object):
         _keys = self.get_keys()
         _master_list = []
 
-        def _parse_string(ky, s):
+        def _parse_string(ky, s, e):
             if not isinstance(s, str):
                 raise TypeError("Hey, {} is not a string".format(s))
 
@@ -236,12 +255,14 @@ class NetCDFFile(object):
             else:
                 warnings.warn('Warning: {} not found in varlist'.format(s), VariableWarning)
 
+            return
+
         if isinstance(varlist, str):
-            _parse_string(_keys, varlist)
+            _parse_string(_keys, varlist, exclude)
 
         elif isinstance(varlist, (list, tuple)):
             for l in varlist:
-                _parse_string(_keys, l)
+                _parse_string(_keys, l, exclude)
         else:
             print('UP UP DOWN DOWN LEFT RIGHT LEFT RIGHT B A START')
 
@@ -262,7 +283,7 @@ class NetCDFFile(object):
         else:
             return False
 
-    def get_vars(self, varlist=None, **kwargs):
+    def get_vars(self, varlist=None, exclude=None, **kwargs):
         """Return data from the netCDF file as a Pandas object if possible
 
         This is the main heavy-lifter of the NetCDFFile class.
@@ -271,7 +292,7 @@ class NetCDFFile(object):
         thinks are matches.
 
         Requires:
-         -  varlist (str, list, tuple)
+        -  varlist (str, list, tuple)
                 can be a single string that you want
                 matched to keys in the netCDF variable list.
                 If it's not an exact match, it will look for
@@ -281,7 +302,7 @@ class NetCDFFile(object):
 
         Returns:
 
-         -  Pandas DataFrame or dict()
+        -  Pandas DataFrame or dict()
                 The output type depends purely on the following conditions:
                   1. 'time' is a netCDF variable
                   2. 'time' exists in the dimensions for each variable
@@ -299,7 +320,7 @@ class NetCDFFile(object):
             if not isinstance(resample, str):
                 raise TypeError("resample must be of type string")
 
-        vl = self._parse_variable_list(varlist, **kwargs)
+        vl = self._parse_variable_list(varlist, exclude, **kwargs)
 
         if vl is None:
             return None
