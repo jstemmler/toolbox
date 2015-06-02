@@ -325,6 +325,8 @@ class NetCDFFile(object):
         if vl is None:
             return None
 
+        mapping = kwargs.pop('mapping', None)
+
         with Dataset(self.abspath, 'r') as D:
             time_dim = np.array([self._check_time_dimension(D.variables[v]) for v in vl])
 
@@ -333,7 +335,12 @@ class NetCDFFile(object):
             if 'time' in D.variables.keys() and time_dim.all():
                 dt = num2date(D.variables['time'][:], D.variables['time'].units)
                 for v in vl:
-                    data[v] = D.variables[v][:]
+                    if mapping is None:
+                        data[v] = D.variables[v][:]
+                    elif isinstance(mapping, dict):
+                        data[mapping[v]] = D.variables[v][:]
+                    else:
+                        return None
 
                 if resample is None:
                     df = pd.DataFrame(data, index=dt)
@@ -344,6 +351,9 @@ class NetCDFFile(object):
             else:
 
                 for v in vl:
-                    data[v] = D.variables[v][:]
+                    if mapping is None:
+                        data[v] = D.variables[v][:]
+                    elif isinstance(mapping, dict):
+                        data[mapping[v]] = D.variables[v][:]
 
                 return data
