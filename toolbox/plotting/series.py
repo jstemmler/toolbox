@@ -43,7 +43,7 @@ def filled_series(data, points=(5, 95), filled=(25, 75), **kwargs):
     [ax.plot([i, i], [l, u], 'k--', zorder=1, linewidth=.3)
         for i, l, u in data_series[[uppmid, strupp]].itertuples()]
 
-    fl = ax.fill_between(data_series,
+    fl = ax.fill_between(data_series.index,
                          data_series[lowmid],
                          data_series[uppmid],
                          zorder=2, alpha=0.7, color='gray',
@@ -54,8 +54,8 @@ def filled_series(data, points=(5, 95), filled=(25, 75), **kwargs):
     med = ax.plot_date(data_series.index, data_series['pct_50'], 'r-', zorder=3)
 
     l = ax.legend((flow[0], gray_patch, med[0]),
-                  ('{}th & {}th percentile'.format(points),
-                   '{}th-{}th percentile'.format(filled),
+                  ('{}th & {}th percentile'.format(*points),
+                   '{}th-{}th percentile'.format(*filled),
                    'Median'))
 
     fig.autofmt_xdate()
