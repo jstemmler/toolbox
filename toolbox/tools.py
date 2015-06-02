@@ -44,3 +44,9 @@ class ProgressBar(object):
         sys.stdout.write('\nProcess Complete\n')
         sys.stdout.flush()
         del self
+
+def percentile(n):
+    def percentile_(x):
+        return np.percentile(x, n)
+    percentile_.__name__ = 'pct_%s' % n
+    return percentile_
