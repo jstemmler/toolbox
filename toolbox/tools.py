@@ -50,3 +50,32 @@ def percentile(n):
         return np.percentile(x, n)
     percentile_.__name__ = 'pct_%s' % n
     return percentile_
+
+def uv2deg(u, v):
+
+    def uv2d(u, v):
+        d = 270 - (atan2(v, u) * (180/np.pi))
+        if d >= 360:
+            d = d-360
+        if u==0 and v==0:
+            d = 0
+        return d
+
+    if isinstance(u, float) and isinstance(v, float):
+        deg = uv2d(u, v)
+    else:
+        if len(u) != len(v):
+            raise TypeError('U and V must be same length')
+        deg = np.array([uv2d(ui, vi) for ui, vi in zip(u, v)])
+
+    return deg
+
+def uv2spd(u, v):
+    return np.sqrt((u**2 + v**2))
+
+def uv2met(u, v):
+
+    deg = uv2deg(u, v)
+    spd = uv2spd(u, v)
+
+    return deg, spd
