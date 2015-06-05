@@ -4,3 +4,4 @@ __created__ = "5/13/15 12:41 PM"
 import boxplots
 import maps
 import series
+from windrose import windrose
