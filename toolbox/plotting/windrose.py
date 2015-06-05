@@ -525,12 +525,24 @@ def clean(dir, var):
     ind = dirmask*varmask
     return dir[ind], var[ind]
 
-def new_axes():
-    fig = plt.figure(figsize=(10, 10), dpi=80, facecolor='w', edgecolor='w')
-    rect = [0.1, 0.1, 0.8, 0.8]
+def new_axes(**kwargs):
+    figsize=kwargs.pop('figsize', (10, 10))
+    fig = kwargs.pop('fig', None)
+
+    if fig is None:
+        fig = plt.figure(figsize=figsize, dpi=80, facecolor='w', edgecolor='w')
+
+    rect = kwargs.pop('rect', [0.1, 0.1, 0.8, 0.8])
     ax = WindroseAxes(fig, rect, axisbg='w')
     fig.add_axes(ax)
-    return ax
+    return fig, ax
+
+# def new_axes():
+#     fig = plt.figure(figsize=(10, 10), dpi=80, facecolor='w', edgecolor='w')
+#     rect = [0.1, 0.1, 0.8, 0.8]
+#     ax = WindroseAxes(fig, rect, axisbg='w')
+#     fig.add_axes(ax)
+#     return ax
 
 # ...and adjust the legend box
 def set_legend(ax):
@@ -550,20 +562,20 @@ def windrose(direction=None, speed=None, **kwargs):
     #edgecolor = kwargs.pop('edgecolor', 'w')
     gridcolor = kwargs.pop('gridcolor', 'k')
     gridstyle = kwargs.pop('gridstyle', '..')
+    legend = kwargs.pop('legend', True)
 
-    if fig is None:
-        fig = plt.figure(figsize=figsize, dpi=dpi)
-
-    ax = WindroseAxes(fig, rect)
-    fig.add_axes(ax)
+    fig, ax = new_axes(figsize=figsize, fig=fig, rect=rect)
 
     if gridcolor is not None:
         ax.grid(color=gridcolor)
 
     ax.bar(direction, speed, **kwargs)
-    set_legend(ax)
+    if legend:
+        set_legend(ax)
+    else:
+        pass
 
-    return ax
+    return fig, ax
 
 if __name__=='__main__':
     from pylab import figure, show, setp, random, grid, draw
