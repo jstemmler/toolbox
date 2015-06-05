@@ -5,10 +5,11 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import pandas as pd
 
-import toolbox as tbx
+from ..tools import percentile
 
-import seaborn as sns
-sns.set_style('darkgrid')
+# Seaborn really shouldn't be in the package...
+# import seaborn as sns
+# sns.set_style('darkgrid')
 
 def filled_series(data, points=(5, 95), filled=(25, 75), **kwargs):
 
@@ -26,7 +27,7 @@ def filled_series(data, points=(5, 95), filled=(25, 75), **kwargs):
 
     data_series = (data
                    .groupby(pd.TimeGrouper('1W'))
-                   .agg([tbx.tools.percentile(i) for i in percentile_list]))
+                   .agg([percentile(i) for i in percentile_list]))
 
     strlow = 'pct_{}'.format(points[0])
     strupp = 'pct_{}'.format(points[1])
