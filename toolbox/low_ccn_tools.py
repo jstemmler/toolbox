@@ -14,6 +14,7 @@ __created__ = "6/5/15 7:49 AM"
 
 import matplotlib.pyplot as plt
 import pandas as pd
+import numpy as np
 from datetime import timedelta as delt
 from .plotting.windrose import windrose
 from .plotting.series import filled_series
@@ -159,5 +160,41 @@ def grouped_rose(group, **kwargs):
     return fig
 
 def grouped_box(group, **kwargs):
-    pass
-    return
+    """makes a plot based on a pd.Series.groupby object.
+    This function will take in a grouped series and make
+    a boxplot of each of the groups. Can be as few as 2
+    groups, but must be groupby object
+
+    G:  pandas Series groupby object
+    ax: the axes to plot into
+
+    returns: ax - the axes handles of the boxplot.
+    """
+
+    ax = kwargs.pop('ax', None)
+
+    if ax is None:
+        fig, ax = plt.subplots()
+
+    keys = sorted(group.groups.keys())
+    nbox = len(keys)
+
+    # look through some kwargs
+    whis = kwargs.pop('whis', [5, 95])
+    widths = kwargs.pop('widths', 0.75)
+    sym = kwargs.pop('sym', '+')
+
+    for i, k in enumerate(keys):
+        ax.boxplot(group.get_group(k).dropna(),
+                   positions=[i, ],
+                   widths=widths,
+                   whis=whis,
+                   sym=sym)
+
+    ax.set_xticks(np.arange(nbox))
+    ax.set_xticklabels(keys)
+    ax.set_xlim(left=0-widths, right=i+widths)
+    ax.grid('on')
+    ax.set_ylabel(group.name)
+
+    return ax
