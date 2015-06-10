@@ -3,6 +3,7 @@ __created__ = "5/14/15 3:37 PM"
 
 import numpy as np
 import sys
+from math import atan2
 
 
 class ProgressBar(object):
@@ -56,8 +57,8 @@ def uv2deg(u, v):
     def uv2d(u, v):
         d = 270 - (atan2(v, u) * (180/np.pi))
         if d >= 360:
-            d = d-360
-        if u==0 and v==0:
+            d -= 360
+        if u == 0 and v == 0:
             d = 0
         return d
 
