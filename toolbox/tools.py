@@ -80,3 +80,21 @@ def uv2met(u, v):
     spd = uv2spd(u, v)
 
     return deg, spd
+
+def met2uv(wspd=None, wdir=None):
+    """
+    Converts wind vectors to u,v components
+    windspd: array of windspeeds in any unit
+    winddir: array of wind directions in compass degrees
+    """
+
+    if wspd is None or wdir is None:
+        raise TypeError("Wind speed or direction cannot be NONE")
+
+    polar_dir = 90 - wdir
+    polar_dir_rad = np.radians(polar_dir)
+
+    u = -wspd * np.cos(polar_dir_rad)
+    v = -wspd * np.sin(polar_dir_rad)
+
+    return u, v
