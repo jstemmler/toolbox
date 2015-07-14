@@ -106,7 +106,7 @@ class NetCDFFolder(object):
                     streams[bn] = 1
 
             for k, v in streams.iteritems():
-                print("Found {} items for datastream {}".format(v, k))
+                print("Found {} items for datastream {}\n".format(v, k))
 
     def process(self, varlist=None, savefile=None, **kwargs):
         """Process each netCDF file using the NetCDFFile class"""
@@ -251,7 +251,7 @@ class NetCDFFile(object):
                 if s not in _master_list:
                     _master_list.append(s)
             elif np.any([s in k for k in ky]):
-                [_master_list.append(k) for k in ky if s in k and k not in _master_list]
+                [_master_list.append(k) for k in ky if s in k and k not in _master_list and exclude not in k]
             else:
                 warnings.warn('Warning: {} not found in varlist'.format(s), VariableWarning)
 
@@ -336,9 +336,9 @@ class NetCDFFile(object):
                 dt = num2date(D.variables['time'][:], D.variables['time'].units)
                 for v in vl:
                     if mapping is None:
-                        data[v] = D.variables[v][:]
+                        data[v] = D.variables[v][:]#.astype(np.float)
                     elif isinstance(mapping, dict):
-                        data[mapping[v]] = D.variables[v][:]
+                        data[mapping[v]] = D.variables[v][:]#.astype(np.float)
                     else:
                         return None
 
