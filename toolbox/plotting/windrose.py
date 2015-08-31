@@ -528,12 +528,15 @@ def clean(dir, var):
 def new_axes(**kwargs):
     figsize=kwargs.pop('figsize', (10, 10))
     fig = kwargs.pop('fig', None)
-
+    ax = kwargs.pop('ax', None)
     if fig is None:
         fig = plt.figure(figsize=figsize, dpi=80, facecolor='w', edgecolor='w')
 
-    rect = kwargs.pop('rect', [0.1, 0.1, 0.8, 0.8])
-    ax = WindroseAxes(fig, rect, axisbg='w')
+    
+    rect = kwargs.pop('rect', None)
+    if rect is not None:
+        ax = WindroseAxes(fig, rect, axisbg='w')
+        
     fig.add_axes(ax)
     return fig, ax
 
@@ -555,7 +558,10 @@ def windrose(direction=None, speed=None, **kwargs):
         raise TypeError('Direction and Speed Cannot be NONE!')
 
     fig = kwargs.pop('fig', None)
-    rect = kwargs.pop('rect', [0.1, 0.1, 0.8, 0.8])
+    ax = kwargs.pop('ax', None)
+    if ax is None:
+        rect = kwargs.pop('rect', [0.1, 0.1, 0.8, 0.8])
+    
     dpi = kwargs.pop('dpi', 80)
     figsize = kwargs.pop('figsize', (10, 10))
     #facecolor = kwargs.pop('facecolor', 'w')
@@ -564,7 +570,10 @@ def windrose(direction=None, speed=None, **kwargs):
     gridstyle = kwargs.pop('gridstyle', '..')
     legend = kwargs.pop('legend', True)
 
-    fig, ax = new_axes(figsize=figsize, fig=fig, rect=rect)
+    if ax is None:
+        fig, ax = new_axes(figsize=figsize, fig=fig, rect=rect)
+    else:
+        fig, ax = new_axes(figsize=figsize, fig=fig, ax=ax)
 
     if gridcolor is not None:
         ax.grid(color=gridcolor)
