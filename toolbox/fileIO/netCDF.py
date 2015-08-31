@@ -92,7 +92,7 @@ class NetCDFFolder(object):
         """Print a summary of the folder contents"""
 
         print(self.abspath)
-        print("Found {} files total\n".format(len(self.filelist)))
+        print("Found {} files total".format(len(self.filelist)))
 
         if detailed:
             streams = dict()
@@ -104,9 +104,13 @@ class NetCDFFolder(object):
                     streams[bn] += 1
                 else:
                     streams[bn] = 1
-
+            streamlen = []
             for k, v in streams.iteritems():
-                print("Found {} items for datastream {}\n".format(v, k))
+                dstreamstring = " > Found {} items for datastream {}".format(v, k)
+                print(dstreamstring)
+                streamlen.append(len(dstreamstring))
+
+            print('='*np.max(streamlen)+'\n')
 
     def process(self, varlist=None, savefile=None, **kwargs):
         """Process each netCDF file using the NetCDFFile class"""

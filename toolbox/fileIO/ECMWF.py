@@ -57,3 +57,6 @@ def pick_ecmwf_point(f, v, at=None, LAT=None, LON=None):
 
                     ix += 1
     return vout
+
+def get_ecmwf_grid(file, variable, dtime):
+    pass
