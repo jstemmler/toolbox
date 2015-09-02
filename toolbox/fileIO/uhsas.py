@@ -33,6 +33,13 @@ class UHSAS(object):
 
             self.time = F.variables['time'][:]
 
+    def concentration(self, llim, sample_rate=10):
+
+        mask = self.lower_size_limit >= llim
+        masked_dist = self.size_distribution[:, mask]
+
+        return masked_dist.sum(axis=1) / ((self.sampling_volume / 60) * sample_rate)
+
     def plot(self, savefile=None, **kwargs):
 
         fig = plt.figure(figsize=(12, 7))
